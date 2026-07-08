@@ -22,7 +22,12 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	
+
+    /**
+     *
+     * @param gpsUtil donne un user location aléatoire selon UUID user donné , et contient une liste d attraction
+     * @param rewardCentral selon l'attraction UUID donné , donne un int aléatoire comme point de fidelité
+     */
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
@@ -35,12 +40,22 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
+
+    /**
+     * userLocations = récupere tout les lieu visités par un user
+     * attractions = récupére liste de toute les attraction et de leur location
+     * @param user
+     */
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
-		for(VisitedLocation visitedLocation : userLocations) {
+
+        /**
+         * parcours les attractions et la position de l'user , si l'user a ete pres d'une atraction et qu'il n a pas de point
+         * alors on lui rajoute un nouveau UserReward dans sa liste
+         * probleme tracker qui regarde le meme objet , user pour verifier sa location , modification pendant une iteration ConcurrentModificationException
+         */
+        for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
 				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
 					if(nearAttraction(visitedLocation, attraction)) {

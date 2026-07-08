@@ -47,7 +47,12 @@ public class TestRewardsService {
 		assertTrue(rewardsService.isWithinAttractionProximity(attraction, attraction));
 	}
 
-	@Disabled // Needs fixed - can throw ConcurrentModificationException
+    /**
+     * tourGuideService.getAllUsers() , est construit dans tourguideservice , avec user aleatoire , et location aleatoire
+     * probleme , il modifie la liste du UserRewards dans User , pendant que tourguideservice inspecte user avec le tracker
+     * et ajoute de son coté une nouvelle location
+     */
+//	@Disabled // Needs fixed - can throw ConcurrentModificationException
 	@Test
 	public void nearAllAttractions() {
 		GpsUtil gpsUtil = new GpsUtil();
