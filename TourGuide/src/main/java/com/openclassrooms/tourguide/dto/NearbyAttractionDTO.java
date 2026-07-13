@@ -1,6 +1,5 @@
 package com.openclassrooms.tourguide.dto;
 
-import com.openclassrooms.tourguide.user.User;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
 
@@ -21,5 +20,33 @@ public class NearbyAttractionDTO {
         this.userLongitude = visitedLocation.location.longitude;
         this.distance = distance;
         this.reward = reward;
+    }
+
+    public String getAttractionName() {
+        return attractionName;
+    }
+
+    public Double getAttractionLatitude() {
+        return attractionLatitude;
+    }
+
+    public Double getAttractionLongitude() {
+        return attractionLongitude;
+    }
+
+    public Double getUserLatitude() {
+        return userLatitude;
+    }
+
+    public Double getUserLongitude() {
+        return userLongitude;
+    }
+
+    public Double getDistance() {
+        return distance;
+    }
+
+    public int getReward() {
+        return reward;
     }
 }
