@@ -52,7 +52,6 @@ public class TestRewardsService {
      * probleme , il modifie la liste du UserRewards dans User , pendant que tourguideservice inspecte user avec le tracker
      * et ajoute de son coté une nouvelle location
      */
-//	@Disabled // Needs fixed - can throw ConcurrentModificationException
 	@Test
 	public void nearAllAttractions() {
 		GpsUtil gpsUtil = new GpsUtil();
