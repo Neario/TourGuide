@@ -5,6 +5,15 @@ import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
+import gpsUtil.GpsUtil;
+import gpsUtil.location.Attraction;
+import gpsUtil.location.Location;
+import gpsUtil.location.VisitedLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import tripPricer.Provider;
+import tripPricer.TripPricer;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -12,36 +21,25 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import gpsUtil.GpsUtil;
-import gpsUtil.location.Attraction;
-import gpsUtil.location.Location;
-import gpsUtil.location.VisitedLocation;
-
-import tripPricer.Provider;
-import tripPricer.TripPricer;
-
 @Service
 public class TourGuideService {
-	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
-	private final GpsUtil gpsUtil;
-	private final RewardsService rewardsService;
-	private final TripPricer tripPricer = new TripPricer();
-	public final Tracker tracker;
-	boolean testMode = true;
+    private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
+    private final GpsUtil gpsUtil;
+    private final RewardsService rewardsService;
+    private final TripPricer tripPricer = new TripPricer();
+    public final Tracker tracker;
+    boolean testMode = true;
 
-	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
-		this.gpsUtil = gpsUtil;
-		this.rewardsService = rewardsService;
-		
-		Locale.setDefault(Locale.US);
+    ExecutorService executor = Executors.newFixedThreadPool(16);
+
+    public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
+        this.gpsUtil = gpsUtil;
+        this.rewardsService = rewardsService;
+
+        Locale.setDefault(Locale.US);
 
         if (testMode) {
             logger.info("TestMode enabled");
@@ -102,12 +100,10 @@ public class TourGuideService {
     public List<VisitedLocation> trackUsersLocation(List<User> users) {
 
         List<CompletableFuture<VisitedLocation>> completableFutures = users.stream()
-                .parallel()
                 .map(user -> CompletableFuture.supplyAsync(() -> trackUserLocation(user), executor))
                 .toList();
 
         return completableFutures.stream()
-                .parallel()
                 .map(CompletableFuture::join)
                 .toList();
 
@@ -125,7 +121,7 @@ public class TourGuideService {
      */
     public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
         return gpsUtil.getAttractions().stream().sorted(Comparator.comparingDouble(attraction ->
-                rewardsService.getDistance(attraction, visitedLocation.location)))
+                        rewardsService.getDistance(attraction, visitedLocation.location)))
                 .limit(5)
                 .toList();
     }
@@ -145,15 +141,15 @@ public class TourGuideService {
         });
     }
 
-	/**********************************************************************************
-	 * 
-	 * Methods Below: For Internal Testing
-	 * 
-	 **********************************************************************************/
-	private static final String tripPricerApiKey = "test-server-api-key";
-	// Database connection will be used for external users, but for testing purposes
-	// internal users are provided and stored in memory
-	private final Map<String, User> internalUserMap = new HashMap<>();
+    /**********************************************************************************
+     *
+     * Methods Below: For Internal Testing
+     *
+     **********************************************************************************/
+    private static final String tripPricerApiKey = "test-server-api-key";
+    // Database connection will be used for external users, but for testing purposes
+    // internal users are provided and stored in memory
+    private final Map<String, User> internalUserMap = new HashMap<>();
 
     private void initializeInternalUsers() {
         IntStream.range(0, InternalTestHelper.getInternalUserNumber()).forEach(i -> {
