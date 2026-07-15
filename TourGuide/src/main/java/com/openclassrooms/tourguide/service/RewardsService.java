@@ -1,6 +1,12 @@
 package com.openclassrooms.tourguide.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -12,6 +18,8 @@ import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
+
 @Service
 public class RewardsService {
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
@@ -22,6 +30,8 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
+
+    ExecutorService executorService = Executors.newFixedThreadPool(60);
 
     /**
      *
@@ -50,6 +60,10 @@ public class RewardsService {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
 
+        Set<String> rewardAttractions = user.getUserRewards().stream()
+                .map(reward -> reward.attraction.attractionName)
+                .collect(Collectors.toSet());
+
         /**
          * parcours les attractions et la position de l'user , si l'user a ete pres d'une atraction et qu'il n a pas de point
          * alors on lui rajoute un nouveau UserReward dans sa liste
@@ -57,14 +71,21 @@ public class RewardsService {
          */
         for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
+				if(!rewardAttractions.contains(attraction.attractionName) && nearAttraction(visitedLocation, attraction)) {
+                    user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
 				}
 			}
 		}
 	}
+
+    public void calculateRewards(List<User> users) {
+        List<CompletableFuture<Void>> completableFutures = users.stream()
+                .map(user -> runAsync(() -> calculateRewards(user), executorService))
+                .toList();
+
+        completableFutures.forEach(CompletableFuture::join);
+
+    }
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
