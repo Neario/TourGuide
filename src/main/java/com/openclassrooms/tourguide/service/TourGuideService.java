@@ -3,7 +3,7 @@ package com.openclassrooms.tourguide.service;
 import com.openclassrooms.tourguide.dto.NearbyAttractionDTO;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
-import com.openclassrooms.tourguide.user.User;
+import com.openclassrooms.tourguide.user.User
 import com.openclassrooms.tourguide.user.UserReward;
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
@@ -65,7 +65,6 @@ public class TourGuideService {
         return internalUserMap.get(userName);
     }
 
-    // test
     public List<User> getAllUsers() {
         return internalUserMap.values().stream().collect(Collectors.toList());
     }
