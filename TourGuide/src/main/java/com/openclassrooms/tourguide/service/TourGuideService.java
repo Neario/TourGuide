@@ -65,6 +65,7 @@ public class TourGuideService {
         return internalUserMap.get(userName);
     }
 
+    // test
     public List<User> getAllUsers() {
         return internalUserMap.values().stream().collect(Collectors.toList());
     }
