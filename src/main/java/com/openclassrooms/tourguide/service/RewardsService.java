@@ -52,9 +52,9 @@ public class RewardsService {
 	}
 
     /**
-     * userLocations = récupere tout les lieu visités par un user
-     * attractions = récupére liste de toute les attraction et de leur location
-     * @param user
+     * parcours les la liste des lieux visités par l'utilisateur et la liste des attractions
+     * afin de savoir si l'utilisateur à été proche d'une attraction et si il na pas eu de points , on le lui rajoute
+     * @param user Un user avec une list de visitedLoacation et de userRewards
      */
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
@@ -64,19 +64,20 @@ public class RewardsService {
                 .map(reward -> reward.attraction.attractionName)
                 .collect(Collectors.toSet());
 
-        /**
-         * parcours les attractions et la position de l'user , si l'user a ete pres d'une atraction et qu'il n a pas de point
-         * alors on lui rajoute un nouveau UserReward dans sa liste
-         * probleme tracker qui regarde le meme objet , user pour verifier sa location , modification pendant une iteration ConcurrentModificationException
-         */
         for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				if(!rewardAttractions.contains(attraction.attractionName) && nearAttraction(visitedLocation, attraction)) {
-                    user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-				}
-			}
+            rewardNearAttraction(user, attractions, visitedLocation,  rewardAttractions);
 		}
 	}
+
+    private void rewardNearAttraction(User user, List<Attraction> attractions, VisitedLocation visitedLocation,
+                                      Set<String> rewardAttractions) {
+        for (Attraction attraction : attractions) {
+            if (!rewardAttractions.contains(attraction.attractionName) && nearAttraction(visitedLocation, attraction)) {
+                user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+            }
+        }
+    }
+
 
     public void calculateRewards(List<User> users) {
         List<CompletableFuture<Void>> completableFutures = users
