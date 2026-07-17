@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - quality
+  - package
 
 cache:
   key: maven-cache
@@ -46,3 +47,15 @@ code_quality_job:
   artifacts:
     paths:
       - codequality-results/
+
+package-job:
+  extends: .maven_setup
+  stage: package
+  image: eclipse-temurin:17-jdk-alpine
+  script:
+    - ./mvnw package -DskipTests -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+  artifacts:
+    name: "tourguide-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - target/*.jar
+    expire_in: 4 week
