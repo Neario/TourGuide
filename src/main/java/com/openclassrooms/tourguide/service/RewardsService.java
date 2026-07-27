@@ -1,6 +1,5 @@
 package com.openclassrooms.tourguide.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -20,6 +19,10 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+/**
+ * Calculate rewards point a user earns for attractions visited
+ * based between locations user and location attractions
+ */
 @Service
 public class RewardsService {
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
@@ -31,13 +34,8 @@ public class RewardsService {
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 
-    ExecutorService executorService = Executors.newFixedThreadPool(60);
+    ExecutorService executorService = Executors.newFixedThreadPool(100);
 
-    /**
-     *
-     * @param gpsUtil donne un user location aléatoire selon UUID user donné , et contient une liste d attraction
-     * @param rewardCentral selon l'attraction UUID donné , donne un int aléatoire comme point de fidelité
-     */
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
@@ -52,9 +50,10 @@ public class RewardsService {
 	}
 
     /**
-     * parcours les la liste des lieux visités par l'utilisateur et la liste des attractions
-     * afin de savoir si l'utilisateur à été proche d'une attraction et si il na pas eu de points , on le lui rajoute
-     * @param user Un user avec une list de visitedLoacation et de userRewards
+     * Iterates list of locations visited by the user , and the list of attraction
+     * to determine if the user war near an attraction, if they haven't received rewards point,
+     * the rewards points are added
+     * @param user User with list of visitedLocations
      */
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
@@ -69,6 +68,13 @@ public class RewardsService {
 		}
 	}
 
+    /**
+     * For a visitedLocation adds rewards point for each nearby attraction if haven't already rewards point.
+     * @param user User for reward
+     * @param attractions list of all attractions
+     * @param visitedLocation the visited location to compare at attraction location
+     * @param rewardAttractions set of attraction already rewarded
+     */
     private void rewardNearAttraction(User user, List<Attraction> attractions, VisitedLocation visitedLocation,
                                       Set<String> rewardAttractions) {
         for (Attraction attraction : attractions) {
@@ -78,7 +84,11 @@ public class RewardsService {
         }
     }
 
-
+    /**
+     * Calculate rewards for all users.
+     * Calculate in parallel with {@link CompletableFuture} and pool {@link ExecutorService}
+     * @param users list of users for calculate rewards
+     */
     public void calculateRewards(List<User> users) {
         List<CompletableFuture<Void>> completableFutures = users
                 .stream()
@@ -90,18 +100,42 @@ public class RewardsService {
 
     }
 
+    /**
+     * Check if an attraction and a location is less than 200 miles
+     * @param attraction attraction to calculate proximity
+     * @param location position for calculate proximity
+     * @return boolean , {@code true} ud the location is less than 200 miles
+     */
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
 	}
 
+    /**
+     * Check if visited location is less than 10 miles {@code proximityBuffer}
+     * @param visitedLocation visitedLocation for calculate proximity (10 miles)
+     * @param attraction attraction for calculate proximity (10 miles)
+     * @return boolean , {@code true} ud the location is less than 10 miles
+     */
 	private boolean nearAttraction(VisitedLocation visitedLocation, Attraction attraction) {
 		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
 	}
 
+
+    /**
+     * @param attraction attraction visited
+     * @param user User
+     * @return rewards point awarded by {@code rewardsCentral} for this attraction
+     */
 	public int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}
 
+    /**
+     * calculate distance between two locations
+     * @param loc1 first location
+     * @param loc2 second location
+     * @return distance between two locations in miles
+     */
 	public double getDistance(Location loc1, Location loc2) {
         double lat1 = Math.toRadians(loc1.latitude);
         double lon1 = Math.toRadians(loc1.longitude);
